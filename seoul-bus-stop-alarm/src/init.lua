@@ -7,7 +7,7 @@ local log = require "log"
 local Driver = require "st.driver"
 local capabilities = require "st.capabilities"
 
-local bus_message_cap = capabilities["yeosu0107.busMessage"]
+local bus_message_cap = capabilities["waterabout01957.busmessage"]
 
 local function clean_bus_msg(raw_msg)
     if not raw_msg or raw_msg == "" then
@@ -137,7 +137,27 @@ local function handle_refresh(driver, device, command)
     fetch_seoul_bus_info(device)
 end
 
+local function discovery_handler(driver, _opts, should_continue)
+    log.info("discovery 시작")
+
+    if #driver:get_devices() > 0 then
+        log.info("이미 생성된 디바이스가 있어 discovery를 종료합니다.")
+        return
+    end
+
+    driver:try_create_device({
+        type = "LAN",
+        device_network_id = "seoul-bus-stop-" .. tostring(os.time()),
+        label = "Seoul Bus Stop",
+        profile = "seoul-bus-stop-alarm",
+        manufacturer = "waterabout01957",
+        model = "seoul-bus-info",
+        vendor_provided_label = "Seoul Bus Stop",
+    })
+end
+
 local driver_template = {
+    discovery = discovery_handler,
     supported_capabilities = {
         capabilities.refresh,
         bus_message_cap,
