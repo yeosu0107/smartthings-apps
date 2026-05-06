@@ -7,7 +7,7 @@ components:
       - id: waterabout01957.busmessage
         version: 1
     categories:
-      - name: Other
+      - name: Switch
 preferences:
   - name: apiKey
     title: "공공데이터포털 API Key"
@@ -16,6 +16,9 @@ preferences:
     preferenceType: string
     definition:
       stringType: text
+      minLength: 0
+      maxLength: 255
+      default: ""
   - name: stationId
     title: "정류소 ID (ARS-ID)"
     description: "조회할 서울 버스 정류소의 고유 번호를 입력해주세요."
@@ -23,3 +26,6 @@ preferences:
     preferenceType: string
     definition:
       stringType: text
+      minLength: 0
+      maxLength: 255
+      default: ""
