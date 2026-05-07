@@ -1,0 +1,5 @@
+{
+  "clientName": "Seoul Bus TTS Broker",
+  "scope": ["r:devices:*", "x:devices:*"],
+  "redirectUris": ["https://edge-driver-oauth-broker.netlify.app/api/callback"]
+}
