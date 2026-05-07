@@ -1,5 +1,7 @@
 # smart-things-edge-drivers
 
+[![SmartThings](https://img.shields.io/badge/SmartThings-Edge%20Driver-15bfff?logo=smartthings&logoColor=white)](https://developer.smartthings.com/docs/devices/hub-connected/get-started)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ## Drivers
 
