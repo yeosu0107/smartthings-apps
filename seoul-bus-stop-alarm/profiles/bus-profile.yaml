@@ -2,7 +2,7 @@ name: seoul-bus-stop-alarm
 components:
   - id: main
     capabilities:
-      - id: refresh
+      - id: momentary
         version: 1
       - id: waterabout01957.busmessage
         version: 1
@@ -28,4 +28,24 @@ preferences:
       stringType: text
       minLength: 0
       maxLength: 255
+      default: ""
+  - name: refreshToken
+    title: "SmartThings Refresh Token"
+    description: "OAuth broker 사이트에서 발급받은 refresh token을 붙여 넣으세요."
+    required: false
+    preferenceType: string
+    definition:
+      stringType: text
+      minLength: 0
+      maxLength: 2048
+      default: ""
+  - name: speakerDeviceId
+    title: "스피커 Device ID"
+    description: "TTS를 재생할 SmartThings 스피커(예: 갤럭시 홈 미니)의 device ID."
+    required: false
+    preferenceType: string
+    definition:
+      stringType: text
+      minLength: 0
+      maxLength: 64
       default: ""
