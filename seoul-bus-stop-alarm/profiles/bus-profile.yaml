@@ -31,7 +31,7 @@ preferences:
       default: ""
   - name: refreshToken
     title: "SmartThings Refresh Token"
-    description: "OAuth broker 사이트에서 발급받은 refresh token을 붙여 넣으세요."
+    description: "https://edge-driver-oauth-broker.netlify.app 에서 발급받은 refresh token을 붙여 넣으세요."
     required: false
     preferenceType: string
     definition:

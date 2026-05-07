@@ -22,7 +22,8 @@
 | 정류소 ARS-ID | 정류장 표지판 또는 서울 버스 앱에서 확인 가능한 5자리 번호. |
 | 커스텀 capability `waterabout01957.busmessage` | SmartThings 개발자 워크스페이스에 사전 등록되어 있어야 한다. |
 | OAuth-In SmartApp | 동일 워크스페이스에 직접 등록. Redirect URI는 본인 Netlify broker 사이트의 `/api/callback`. Scopes는 `r:devices:* x:devices:*` 권장. |
-| OAuth broker 배포 | 본 레포지토리의 `oauth-broker/` 디렉터리를 Netlify에 배포. `.github/workflows/deploy-oauth-broker.yml` 로 자동 배포 가능. |
+| OAuth broker 배포 | 본 레포지토리의 `oauth-broker/` 디렉터리. Netlify 사이트와 GitHub repo를 연결해 두면 push 시 자동 빌드·배포된다. |
+| Broker 사이트 (운영) | https://edge-driver-oauth-broker.netlify.app — 본 드라이버에서 사용 중인 인스턴스. |
 | TTS 대상 스피커의 deviceId | `smartthings devices` 로 확인 후 본 드라이버 preference에 입력. |
 
 ## 설정 (Preferences)
@@ -31,14 +32,14 @@
 | --- | --- | --- |
 | 공공데이터포털 API Key | `apiKey` | 발급받은 ServiceKey. |
 | 정류소 ID (ARS-ID) | `stationId` | 조회할 서울 버스 정류소 번호. |
-| SmartThings Refresh Token | `refreshToken` | OAuth broker 사이트에서 한 번 발급받아 붙여 넣음. |
+| SmartThings Refresh Token | `refreshToken` | https://edge-driver-oauth-broker.netlify.app 에서 한 번 발급받아 붙여 넣음. |
 | 스피커 Device ID | `speakerDeviceId` | TTS를 재생할 스피커의 device ID. |
 
 `refreshToken`/`speakerDeviceId`가 비어 있으면 음성 송출은 생략하고 attribute emit만 동작한다.
 
 ## 토큰 흐름
 
-1. 사용자가 broker 사이트에서 "Connect to SmartThings"를 누른다.
+1. 사용자가 broker 사이트(https://edge-driver-oauth-broker.netlify.app)에서 "Connect to SmartThings"를 누른다.
 2. SmartThings에 로그인·동의 후 `refresh_token` 이 화면에 1회 표시된다 (broker 측 저장 없음).
 3. 그 값을 본 드라이버의 `Refresh Token` preference에 붙여 넣는다.
 4. 이후 momentary push 시:
@@ -62,7 +63,7 @@ smartthings edge:drivers:install
 smartthings edge:drivers:logcat <driverId>
 ```
 
-`src/init.lua` 의 `BROKER_BASE_URL` 상수는 본인 Netlify 사이트 URL 로 교체해야 한다.
+`src/init.lua` 의 `BROKER_BASE_URL` 상수는 broker 사이트 URL을 가리킨다. 본인 인스턴스를 따로 운영한다면 이 값과 OAuth-In SmartApp의 redirect URI를 같이 갈아끼우면 된다.
 
 ## 디렉터리 구조
 
