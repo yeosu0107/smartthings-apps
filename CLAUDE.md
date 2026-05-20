@@ -4,39 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-이 레포지토리는 SmartThings Edge Drivers 모음이다. 각 드라이버는 SmartThings Hub에서 실행되는 독립적인 Lua 패키지이며, 최상위 디렉터리 하나가 하나의 드라이버에 대응한다.
+이 레포지토리는 SmartThings용 cloud-to-cloud SmartApp 모음이다. 각 프로젝트는 독립된 디렉터리로 들어 있으며, 최상위 디렉터리 하나가 하나의 SmartApp(또는 관련 서비스)에 대응한다.
 
-현재 포함된 드라이버:
+현재 포함된 프로젝트:
 
-- `seoul-bus-stop-alarm/` — 서울시 공공데이터포털의 버스 도착 정보 API(`ws.bus.go.kr`)를 호출해 커스텀 capability `waterabout01957.busmessage`로 안내 문장을 emit하는 드라이버. `packageKey`는 `waterabout01957.seoul-bus-stop-alarm`.
+- `bus-tts-smartapp/` — 서울시 공공데이터포털 버스 도착 정보 API를 호출해, SmartThings 가상 디바이스 switch toggle을 트리거로 갤럭시 홈 미니에서 TTS 안내를 출력. SmartThings `API_ONLY` (OAuth-In) 패턴, Cloudflare Workers + KV 기반. 상세는 [`bus-tts-smartapp/README.md`](bus-tts-smartapp/README.md).
 
-## Edge Driver Anatomy
+> 참고: 과거에는 SmartThings Edge Driver(`seoul-bus-stop-alarm/`)도 포함되어 있었으나, hub의 외부 인터넷 직접 호출이 platform 차원에서 차단되어 SmartApp(cloud-to-cloud) 구조로 옮겼다. 관련 의사결정은 `docs/` 참고.
 
-각 드라이버는 SmartThings Edge가 요구하는 고정 레이아웃을 따른다:
+## SmartApp Anatomy (`bus-tts-smartapp` 기준)
 
-- `config.yml` — `name`, `packageKey`, `description` 등 패키지 메타데이터.
-- `profiles/*.yaml` — 디바이스 프로파일. `components`에 사용 capability(예: `switch`, `refresh`, 커스텀 `waterabout01957.busmessage`)와 `preferences`(사용자 입력 필드: API key, 정류소 ID 등)를 선언. 프로파일에 선언된 preference는 런타임에서 `device.preferences.<name>`으로 접근.
-- `src/init.lua` — 드라이버 엔트리포인트. `Driver(name, template):run()` 으로 실행되며 `template`의 `supported_capabilities`/`capability_handlers`로 각 capability command와 핸들러를 매핑한다.
+이 레포의 SmartApp은 Cloudflare Workers 위에서 SmartThings `API_ONLY` 앱으로 동작한다:
 
-커스텀 capability(`waterabout01957.busmessage` 등)는 SmartThings 개발자 워크스페이스에서 별도로 등록되어 있어야 하며, 코드에서는 `capabilities["waterabout01957.busmessage"]`로 참조한다.
+- `wrangler.toml` — Cloudflare Workers 설정 + KV binding (gitignore 대상, `wrangler.toml.example`에서 생성).
+- `src/worker.js` — Workers entry. fetch 핸들러에서 OAuth/SmartApp lifecycle/디바이스 이벤트 라우팅.
+- `src/smartapp.js` — SmartApp lifecycle (`PING`, `CONFIRMATION`, `CONFIGURATION`, `EVENT` 등) 처리.
+- `src/oauth.js` — OAuth code 교환, refresh, `getValidAccessToken()`로 만료 시 자동 갱신.
+- `src/storage.js` — KV 기반 토큰 저장 abstraction (로컬 테스트용 memory storage 포함).
+- `src/subscription.js` — 디바이스 이벤트 구독 등록 (`switch.switch`).
+- `src/smartthings.js` — SmartThings API로 디바이스 명령 전송 (TTS, switch off 등).
+- `src/bus.js` — 서울시 공공데이터 버스 API 호출 + 안내 메시지 빌드.
+- `profiles/*.yaml` — SmartThings device profile (가상 디바이스용, `switch` + 커스텀 capability).
+- `test/*.test.js` — `node --test` 기반 단위 테스트.
+
+SmartThings에 등록한 `API_ONLY` 앱은 worker의 `targetUrl`로 lifecycle 콜백을 보내고, worker는 KV에 보관한 `refresh_token`으로 access token을 갱신하며 양방향 호출을 처리한다.
 
 ## HTTP / 비동기 호출 규약
 
-Edge 드라이버는 cosock 기반 협동 스케줄러 위에서 동작한다. 외부 HTTP 호출은 반드시 `cosock.asyncify "socket.http"`로 감싼 모듈을 사용해야 메인 루프를 블록하지 않는다 — `init.lua`의 `local http = cosock.asyncify "socket.http"` 패턴을 따를 것. JSON 파싱은 `dkjson`을 사용한다.
+Cloudflare Workers V8 isolate 위에서 동작하므로 Node.js API가 아니라 **Web 표준 API**(`fetch`, `Request`, `Response`, `crypto.subtle`)를 사용한다. 외부 호출은 모두 글로벌 `fetch`로, JSON은 표준 `JSON.parse`/`response.json()`을 쓴다. `node:*` 모듈 import는 피하고, 꼭 필요한 경우 wrangler `compatibility_flags = ["nodejs_compat"]`을 검토할 것.
 
-## 빌드 / 배포
-
-이 레포지토리에는 자체 빌드 스크립트나 테스트 러너가 없다. 검증·배포는 SmartThings CLI(`smartthings`)로 수행한다:
+## 빌드 / 테스트 / 배포
 
 ```bash
-# 패키지 검증/업로드 (드라이버 디렉터리를 인자로 지정)
-smartthings edge:drivers:package seoul-bus-stop-alarm
+# 단위 테스트 (node --test)
+cd bus-tts-smartapp
+npm install
+npm test
 
-# 채널에 할당
-smartthings edge:channels:assign
+# 로컬 실행 (Cloudflare Workers dev server)
+wrangler dev
 
-# 허브에 설치 (특정 허브에 직접 설치할 때)
-smartthings edge:drivers:install
+# 배포
+wrangler deploy
 ```
 
-로컬 단위 테스트 프레임워크는 설정되어 있지 않으므로, 동작 검증은 실제 허브에 배포 후 SmartThings 앱 또는 `smartthings edge:drivers:logcat`으로 로그를 확인하는 방식으로 진행한다.
+CI/CD는 `main` push 시 GitHub Actions(`.github/workflows/deploy.yml`)가 GitHub Secret에서 `wrangler.toml` 생성 → `wrangler secret bulk`로 secret 동기화 → `wrangler deploy` 순으로 자동 실행한다. 등록해야 할 GitHub Secret 목록은 `bus-tts-smartapp/README.md`의 CI/CD 섹션 참고.
+
+배포 후 동작 검증:
+
+```bash
+wrangler tail bus-tts-smartapp --format pretty   # 실시간 worker 로그
+smartthings devices:status <device-id>           # SmartThings 측 상태
+```
+
+## 시크릿 / 자격증명 정책
+
+`wrangler.toml`, `.env`, OAuth client secret, access/refresh token 등 비밀은 절대 레포에 커밋하지 않는다. 운영 비밀은 GitHub Secret + Cloudflare Worker secret(`wrangler secret put`)이 source of truth이고, 사용자 토큰은 Cloudflare KV에만 저장한다.
