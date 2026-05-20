@@ -1,4 +1,7 @@
-# smart-things-edge-drivers
+# smartthings-smartapps
+
+[![SmartThings](https://img.shields.io/badge/SmartThings-SmartApp-15bfff?logo=smartthings&logoColor=white)](https://developer.smartthings.com/docs/connected-services/smartapp-basics)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 SmartThings용 cloud-to-cloud SmartApp 모음.
 
