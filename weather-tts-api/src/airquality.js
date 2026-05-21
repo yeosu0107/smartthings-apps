@@ -18,7 +18,7 @@ function toNumberOrNull(s) {
 
 async function fetchAirQuality(apiKey, stationName, fetchFn) {
   const _fetch = fetchFn || fetch;
-  const url = 'http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty'
+  const url = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty'
     + `?serviceKey=${encodeURIComponent(apiKey)}`
     + `&stationName=${encodeURIComponent(stationName)}`
     + '&dataTerm=DAILY'

@@ -14,7 +14,7 @@ function buildSubscriptionPayload({ deviceId, subscriptionName }) {
 }
 
 async function registerSubscription({ accessToken, installedAppId, deviceId, fetch }) {
-  const payload = buildSubscriptionPayload({ deviceId, subscriptionName: 'busTrigger' });
+  const payload = buildSubscriptionPayload({ deviceId, subscriptionName: 'weatherTrigger' });
   const resp = await fetch(`https://api.smartthings.com/installedapps/${installedAppId}/subscriptions`, {
     method: 'POST',
     headers: {

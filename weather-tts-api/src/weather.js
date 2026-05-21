@@ -84,7 +84,7 @@ function extractFcstSlots(items, todayYmd) {
 }
 
 function buildKmaUrl(endpoint, apiKey, nx, ny, { base_date, base_time }) {
-  return 'http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/' + endpoint
+  return 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/' + endpoint
     + `?ServiceKey=${encodeURIComponent(apiKey)}`
     + `&pageNo=1&numOfRows=1000&dataType=JSON`
     + `&base_date=${base_date}&base_time=${base_time}`
