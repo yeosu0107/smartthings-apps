@@ -118,9 +118,72 @@ smartthings apps <appId> | grep targetStatus    # CONFIRMED 확인
 
 이후 모바일 앱에서 가상 디바이스 switch ON으로 트리거.
 
+## 운영 중 갱신 (1회 셋업 이후)
+
+코드만 바뀌면 CI(아래 "CI/CD")로 끝나지만, SmartThings 측 메타데이터가 변하는 경우엔 수동 명령이 필요하다.
+
+### 디바이스 프로파일 변경 (`profiles/bus-profile.yaml`)
+
+capability 추가/변경 등 프로파일 yaml을 수정했을 때:
+
+```bash
+smartthings deviceprofiles:update <profile-id> -i profiles/bus-profile.yaml
+# 가상 디바이스 자체를 새 capability로 다시 생성해야 할 수도 있음
+```
+
+가상 디바이스는 생성 시점의 프로파일을 따라가므로, capability 구조가 크게 바뀌면 `virtualdevices:delete` → `virtualdevices:create`로 재생성하고 `BUS_DEVICE_ID` secret도 새 id로 업데이트.
+
+### Worker 호스트 변경 (`targetUrl` / OAuth redirect URI)
+
+worker URL이 바뀐 경우 (예: `workers.dev` → 커스텀 도메인). SmartThings는 등록된 `targetUrl` / `redirectUris`로만 콜백/리다이렉트를 보내므로 둘 다 갱신해야 한다:
+
+```bash
+# 1) targetUrl 갱신 + 재-CONFIRMATION
+smartthings apps:update <appId> -i - <<EOF
+appName: bus-tts-api
+appType: API_ONLY
+apiOnly:
+  targetUrl: https://<new-host>/
+EOF
+smartthings apps:register <appId>
+smartthings apps <appId> | grep targetStatus    # CONFIRMED 확인
+
+# 2) OAuth redirect URI 갱신
+smartthings apps:oauth:update <appId> -i - <<EOF
+clientName: Seoul Bus TTS
+scope: [r:devices:*, x:devices:*]
+redirectUris: [https://<new-host>/oauth/callback]
+EOF
+
+# 3) Cloudflare 측 ST_REDIRECT_URI secret도 새 URL로 (CI 변수도)
+wrangler secret put ST_REDIRECT_URI
+```
+
+GitHub Secret `ST_REDIRECT_URI`도 함께 갱신해야 다음 CI 실행에서 worker가 새 redirect URI를 쓴다. 이전 OAuth 토큰은 KV에 그대로 유효하므로 사용자 재인증은 보통 불필요.
+
+### OAuth scope 변경
+
+`r:devices:*` 외 다른 scope를 추가/제거한 경우:
+
+```bash
+smartthings apps:oauth:update <appId> -i - <<EOF
+clientName: Seoul Bus TTS
+scope: [r:devices:*, x:devices:*, r:locations:*]   # 변경된 scope
+redirectUris: [https://<your-worker-host>/oauth/callback]
+EOF
+```
+
+기존 사용자 토큰은 옛 scope로 발급된 상태라 신규 scope를 쓰려면 브라우저로 `/authorize`를 다시 거쳐 재동의해야 한다.
+
 ## CI/CD (GitHub Actions)
 
-`main` push 시 자동 배포. `.github/workflows/deploy.yml` 참고. **모든 값을 GitHub Secret에서 source-of-truth로 관리**하고, workflow가:
+수동 트리거만 가능 (`workflow_dispatch`). GitHub UI → Actions → "Deploy bus-tts-api" → **Run workflow** 또는 CLI:
+
+```bash
+gh workflow run deploy-bus-tts.yml
+```
+
+`.github/workflows/deploy-bus-tts.yml` 참고. **모든 값을 GitHub Secret에서 source-of-truth로 관리**하고, workflow가:
 
 1. `wrangler.toml.example`을 GitHub Secret의 KV namespace id로 치환해서 `wrangler.toml` 생성
 2. `wrangler secret bulk`로 worker secret 7개 모두 Cloudflare에 동기화

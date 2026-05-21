@@ -60,7 +60,7 @@ wrangler dev
 wrangler deploy
 ```
 
-CI/CD는 `main` push 시 GitHub Actions(`.github/workflows/deploy.yml`)가 GitHub Secret에서 `wrangler.toml` 생성 → `wrangler secret bulk`로 secret 동기화 → `wrangler deploy` 순으로 자동 실행한다. 등록해야 할 GitHub Secret 목록은 [`bus-tts-api/README.md`](bus-tts-api/README.md)의 CI/CD 섹션 참고.
+CI/CD는 `.github/workflows/deploy-bus-tts.yml`로 정의되어 있으며 **수동 트리거(`workflow_dispatch`) 전용**이다. GitHub UI의 Actions → "Deploy bus-tts-api" → Run workflow, 또는 `gh workflow run deploy-bus-tts.yml`로 실행. workflow는 GitHub Secret에서 `wrangler.toml` 생성 → `wrangler secret bulk`로 secret 동기화 → `wrangler deploy` 순서로 진행한다. 등록해야 할 GitHub Secret 목록과 SmartThings 측 갱신 절차(프로파일 / `targetUrl` / OAuth scope 변경)는 [`bus-tts-api/README.md`](bus-tts-api/README.md) 참고.
 
 배포 후 동작 검증:
 

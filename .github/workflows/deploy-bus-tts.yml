@@ -1,11 +1,6 @@
 name: Deploy bus-tts-api
 
 on:
-  push:
-    branches: [main, master]
-    paths:
-      - 'bus-tts-api/**'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 jobs:
